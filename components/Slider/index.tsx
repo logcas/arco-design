@@ -1,5 +1,5 @@
 import React, { forwardRef, memo, useContext, CSSProperties, useRef } from 'react';
-import { plus } from 'number-precision';
+import { plus, times } from 'number-precision';
 import SliderButton from './button';
 import Marks from './marks';
 import Dots from './dots';
@@ -54,15 +54,6 @@ function Slider(baseProps: SliderProps, ref) {
   const range = !!propRange;
   const rangeConfig = isObject(propRange) ? { ...propRange } : { draggableBar: false };
 
-  const { getLegalValue, getLegalRangeValue, isLegalValue } = useLegalValue({
-    isRange: range,
-    min,
-    max,
-    onlyMarkValue,
-    step,
-    marks,
-  });
-
   const { intervalConfigs, markList } = useInterval({
     min,
     max,
@@ -70,6 +61,15 @@ function Slider(baseProps: SliderProps, ref) {
     step,
     marks,
     getIntervalConfig,
+  });
+
+  const { getLegalValue, getLegalRangeValue, isLegalValue } = useLegalValue({
+    isRange: range,
+    min,
+    max,
+    onlyMarkValue,
+    intervalConfigs,
+    marks,
   });
 
   // 受控与非受控值处理
@@ -164,7 +164,8 @@ function Slider(baseProps: SliderProps, ref) {
       return 0;
     }
     // 通过坐标点偏移算出当前值相对于整个滑动轴的比例位置
-    const offset = diff / roadLength;
+    let offset = Math.max(diff / roadLength, 0);
+    offset = Math.min(1, offset);
     // 通过偏移值算出当前值在哪个区间
     const currentInterval = intervalConfigs.find((config) => {
       return offset >= config.beginOffset && offset <= config.endOffset;
@@ -175,13 +176,11 @@ function Slider(baseProps: SliderProps, ref) {
     // 这个区间整体的比例
     const currentIntervalOffset = endOffset - beginOffset;
     // 当前在这个区间的值 = （在这个区间的比例（相对于整体） / 这个区间相对于整体的比例）* 这个区间的总值
-    const valueInInterval = Math.round(
-      (currentValueOffset / currentIntervalOffset) * (end - begin)
-    );
+    const valueInInterval = (currentValueOffset / currentIntervalOffset) * (end - begin);
     // 算出当前值在这个区间的步数
     const stepNum = Math.round(valueInInterval / step);
     // 当前值 = 区间起始值 + 区间步数 * 步长
-    return plus(begin, stepNum * step);
+    return plus(begin, times(stepNum, step));
   }
 
   function getBarStyle(offsets: number[]): CSSProperties {

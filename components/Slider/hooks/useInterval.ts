@@ -1,3 +1,5 @@
+// 精确加减
+import { plus, minus, times, divide } from 'number-precision';
 import { useMemo } from 'react';
 import { SliderProps } from '..';
 import { isNumber, isFunction } from '../../_util/is';
@@ -87,12 +89,18 @@ function useInterval(props: {
       // 主要是计算出剩余的 width 和 剩余的长度
       if (width) {
         width = Math.min(remainWidth, width);
-        const len = end - begin;
-        remainLen -= len;
-        remainWidth -= width;
+        const len = minus(end, begin);
+        remainLen = minus(remainLen, len);
+        remainWidth = minus(remainWidth, width);
       }
       return { width, step: stepAndWidth.step };
     });
+
+    // 所有区间都有自定义宽度但仍有剩余的时候，最后一个区间的宽度需要校准
+    if (stepAndWidthConfig.every(({ width }) => width) && remainWidth) {
+      const lastIntervalConfig = stepAndWidthConfig[markIntervals.length - 1];
+      lastIntervalConfig.width = plus(lastIntervalConfig.width, remainWidth);
+    }
 
     const allConfigs: IntervalConfig[] = [];
     markIntervals.forEach(([begin, end], index) => {
@@ -100,14 +108,14 @@ function useInterval(props: {
       const config: IntervalConfig = { begin, end, step, beginOffset: 0, endOffset: 0, width };
       // 用户没有配置 width，按照区间长度来分配剩余的width
       if (!config.width) {
-        config.width = remainWidth * ((end - begin) / remainLen);
+        config.width = times(remainWidth, divide(minus(end, begin), remainLen));
       }
       const prevIndex = allConfigs.length - 1;
       // 当前区间的 beginOffset 是前一个区间的 endOffset
       if (allConfigs[prevIndex]) {
         config.beginOffset = allConfigs[prevIndex].endOffset;
       }
-      config.endOffset = Math.min(1, config.beginOffset + config.width);
+      config.endOffset = Math.min(1, plus(config.beginOffset, config.width));
       allConfigs.push(config);
     });
 

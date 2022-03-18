@@ -10,10 +10,10 @@ const defaultConfig = {
 
 const marks = {
   0: '0km',
-  10: '10km',
-  20: '20km',
-  30: '30km',
-  50: '50km',
+  1: '1km',
+  2: '2km',
+  3: '3km',
+  5: '5km',
 };
 
 function Demo() {
@@ -45,14 +45,30 @@ function Demo() {
         <Typography.Text bold>分段区间-滑动输入条</Typography.Text>
         <Slider
           {...config}
-          max={50}
+          max={5}
           defaultValue={10}
           marks={marks}
           getIntervalConfig={([begin, end]) => {
             const interval = `${begin}~${end}`;
             switch (interval) {
-              case `0~10`: {
-                return { width: '50%' };
+              case `0~1`: {
+                return { width: '50%', step: 0.1 };
+              }
+              default:
+                return { step: (end - begin) / 5 };
+            }
+          }}
+        />
+        <Slider
+          {...config}
+          max={5}
+          marks={marks}
+          range
+          getIntervalConfig={([begin, end]) => {
+            const interval = `${begin}~${end}`;
+            switch (interval) {
+              case `0~1`: {
+                return { width: '50%', step: 0.1 };
               }
               default:
                 return { step: (end - begin) / 5 };
@@ -61,7 +77,14 @@ function Demo() {
         />
       </div>
       <Typography.Text bold>未分段-滑动输入条</Typography.Text>
-      <Slider {...config} max={50} defaultValue={10} marks={marks} />
+      <Slider
+        max={5}
+        defaultValue={1}
+        marks={marks}
+        step={0.1}
+        showTicks
+        getIntervalConfig={() => ({ width: '0.2', step: '0.1' })}
+      />
     </div>
   );
 }
